@@ -1,113 +1,130 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
+import Link from 'next/link';
+import { Map, BarChart3, GitCompare, Search } from 'lucide-react';
 import { useStore } from '@/app/store/useStore';
-import MapContainer from '@/app/components/Map/MapContainer';
-import MapStyleSelector from '@/app/components/Map/MapStyleSelector';
-import Sidebar from '@/app/components/Sidebar/Sidebar';
-import RestaurantDetail from '@/app/components/Cards/RestaurantDetail';
-import LocationButton from '@/app/components/UI/LocationButton';
-import CompareFloatingButton from '@/app/components/UI/CompareFloatingButton';
-import Header from '@/app/components/Layout/Header';
+import HeroStats from '@/app/components/Dashboard/HeroStats';
+import Spotlight from '@/app/components/Dashboard/Spotlight';
+import { CategoryCarousels } from '@/app/components/Dashboard/TrendingCarousel';
+import RegionTabs from '@/app/components/Dashboard/RegionTabs';
+import AwardShowcase from '@/app/components/Dashboard/AwardShowcase';
 import restaurantsData from '@/public/data/restaurants.json';
 import { Restaurant } from '@/app/types/restaurant';
 
-export default function Home() {
-  const { restaurants, setRestaurants, filters, userLocation } = useStore();
+export default function Dashboard() {
+  const { restaurants, setRestaurants } = useStore();
 
   // Load restaurants on mount
   useEffect(() => {
     setRestaurants(restaurantsData as Restaurant[]);
   }, [setRestaurants]);
 
-  // Filter restaurants based on current filters
-  const filteredRestaurants = useMemo(() => {
-    return restaurants.filter((restaurant) => {
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch =
-          restaurant.name.toLowerCase().includes(searchLower) ||
-          restaurant.city.toLowerCase().includes(searchLower) ||
-          restaurant.country.toLowerCase().includes(searchLower) ||
-          restaurant.cuisine.toLowerCase().includes(searchLower);
-        if (!matchesSearch) return false;
-      }
-
-      // List filter
-      if (filters.lists.length > 0) {
-        // 'both' restaurants should match either list filter
-        if (restaurant.list === 'both') {
-          // Show if any of the selected lists match
-          // (both means it's on both lists)
-        } else if (!filters.lists.includes(restaurant.list)) {
-          return false;
-        }
-      }
-
-      // Cuisine filter
-      if (filters.cuisines.length > 0) {
-        if (!filters.cuisines.includes(restaurant.cuisine)) return false;
-      }
-
-      // Country filter
-      if (filters.countries.length > 0) {
-        if (!filters.countries.includes(restaurant.country)) return false;
-      }
-
-      // Ranking tier filter
-      if (filters.rankingTier !== 'all') {
-        const tierLimits: Record<string, number> = {
-          'top-10': 10,
-          'top-25': 25,
-          'top-50': 50,
-          'top-100': 100,
-        };
-        const limit = tierLimits[filters.rankingTier];
-        if (limit && restaurant.rank > limit) return false;
-      }
-
-      // Distance filter (only if user location is available)
-      if (filters.maxDistance !== null && userLocation) {
-        const R = 6371; // Earth's radius in km
-        const dLat = ((restaurant.coordinates.lat - userLocation.lat) * Math.PI) / 180;
-        const dLon = ((restaurant.coordinates.lng - userLocation.lng) * Math.PI) / 180;
-        const a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos((userLocation.lat * Math.PI) / 180) *
-            Math.cos((restaurant.coordinates.lat * Math.PI) / 180) *
-            Math.sin(dLon / 2) *
-            Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c;
-
-        if (distance > filters.maxDistance) return false;
-      }
-
-      return true;
-    });
-  }, [restaurants, filters, userLocation]);
+  // Get the #1 restaurant for spotlight
+  const spotlightRestaurant = restaurants.find((r) => r.rank === 1) || restaurants[0];
 
   return (
-    <main className="h-screen w-screen overflow-hidden bg-bg-primary">
-      {/* Header with navigation */}
-      <Header />
+    <main className="min-h-screen bg-bg-primary pt-14 pb-20 md:pb-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
+        {/* Hero Stats */}
+        <section>
+          <HeroStats restaurants={restaurants} className="hidden sm:grid" />
+          {/* Mobile version - 3 columns */}
+          <div className="grid grid-cols-3 gap-2 sm:hidden">
+            <div className="glass-card p-3 text-center">
+              <span className="text-xl font-bold text-text-primary">{restaurants.length}</span>
+              <p className="text-[10px] text-text-secondary">Restaurants</p>
+            </div>
+            <div className="glass-card p-3 text-center">
+              <span className="text-xl font-bold text-text-primary">
+                {new Set(restaurants.map((r) => r.country)).size}
+              </span>
+              <p className="text-[10px] text-text-secondary">Countries</p>
+            </div>
+            <div className="glass-card p-3 text-center">
+              <span className="text-xl font-bold text-text-primary">
+                {new Set(restaurants.map((r) => r.cuisine)).size}
+              </span>
+              <p className="text-[10px] text-text-secondary">Cuisines</p>
+            </div>
+          </div>
+        </section>
 
-      {/* Sidebar */}
-      <Sidebar restaurants={restaurants} filteredRestaurants={filteredRestaurants} />
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Spotlight - Takes 1 column */}
+          <div className="lg:col-span-1">
+            {spotlightRestaurant && (
+              <Spotlight restaurant={spotlightRestaurant} />
+            )}
+          </div>
 
-      {/* Map */}
-      <div className="h-full w-full">
-        <MapContainer restaurants={filteredRestaurants} />
-        <MapStyleSelector />
-        <LocationButton />
+          {/* Region Browse - Takes 2 columns */}
+          <div className="lg:col-span-2">
+            <RegionTabs restaurants={restaurants} />
+          </div>
+        </div>
+
+        {/* Trending Carousels */}
+        <section>
+          <CategoryCarousels restaurants={restaurants} />
+        </section>
+
+        {/* Award Showcase */}
+        <section>
+          <AwardShowcase restaurants={restaurants} />
+        </section>
+
+        {/* Quick Navigation */}
+        <section className="hidden md:block">
+          <div className="grid grid-cols-3 gap-4">
+            <Link
+              href="/map"
+              className="glass-card p-4 flex items-center gap-4 hover:bg-surface-secondary/50 transition-colors group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-accent/15 flex items-center justify-center">
+                <Map className="w-6 h-6 text-accent" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-text-primary group-hover:text-accent transition-colors">
+                  Interactive Map
+                </h3>
+                <p className="text-sm text-text-secondary">Explore locations worldwide</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/analytics"
+              className="glass-card p-4 flex items-center gap-4 hover:bg-surface-secondary/50 transition-colors group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-blue-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-text-primary group-hover:text-accent transition-colors">
+                  Analytics
+                </h3>
+                <p className="text-sm text-text-secondary">Charts and statistics</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/compare"
+              className="glass-card p-4 flex items-center gap-4 hover:bg-surface-secondary/50 transition-colors group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-purple-500/15 flex items-center justify-center">
+                <GitCompare className="w-6 h-6 text-purple-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-text-primary group-hover:text-accent transition-colors">
+                  Compare
+                </h3>
+                <p className="text-sm text-text-secondary">Side-by-side comparison</p>
+              </div>
+            </Link>
+          </div>
+        </section>
       </div>
-
-      {/* Restaurant Detail Panel */}
-      <RestaurantDetail />
-
-      {/* Compare Floating Button */}
-      <CompareFloatingButton />
     </main>
   );
 }

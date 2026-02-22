@@ -14,7 +14,7 @@ export default function LocationButton() {
       onClick={requestLocation}
       disabled={isLocating}
       className={cn(
-        'absolute bottom-24 right-4 z-[1000] p-3 rounded-full shadow-lg transition-all duration-200',
+        'absolute bottom-28 md:bottom-24 right-4 z-[100] p-3 rounded-full shadow-lg transition-all duration-200',
         'glass-card hover:bg-white/10',
         userLocation && 'ring-2 ring-accent',
         isLocating && 'animate-pulse'

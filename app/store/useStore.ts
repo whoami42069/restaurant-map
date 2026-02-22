@@ -62,6 +62,8 @@ const defaultFilters: FilterState = {
   lists: [],
   cuisines: [],
   countries: [],
+  regions: [],
+  awards: [],
   rankingTier: 'all',
   maxDistance: null,
 };

@@ -36,7 +36,7 @@ export default function Sidebar({ restaurants, filteredRestaurants }: SidebarPro
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
         className={cn(
-          'fixed top-1/2 -translate-y-1/2 z-[1001] glass-card p-2 transition-all duration-300',
+          'fixed top-1/2 -translate-y-1/2 z-[600] glass-card p-2 transition-all duration-300',
           sidebarOpen ? 'left-[380px]' : 'left-0'
         )}
       >
@@ -50,7 +50,7 @@ export default function Sidebar({ restaurants, filteredRestaurants }: SidebarPro
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-full w-[380px] z-[1000] transition-transform duration-300 ease-in-out',
+          'fixed left-0 top-0 h-full w-[380px] z-[500] transition-transform duration-300 ease-in-out',
           'bg-bg-secondary border-r border-border',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}

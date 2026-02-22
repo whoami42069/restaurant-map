@@ -13,7 +13,7 @@ export default function CompareFloatingButton() {
   const compareRestaurants = restaurants.filter(r => compareList.includes(r.id));
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[1001]">
+    <div className="fixed bottom-24 md:bottom-4 left-1/2 -translate-x-1/2 z-[200]">
       <div className="glass-card p-2 flex items-center gap-3">
         <div className="flex items-center gap-2 px-3">
           <GitCompare className="w-5 h-5 text-accent" />

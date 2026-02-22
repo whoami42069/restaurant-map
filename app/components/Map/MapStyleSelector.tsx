@@ -17,7 +17,7 @@ export default function MapStyleSelector() {
   const { mapStyle, setMapStyle } = useStore();
 
   return (
-    <div className="absolute top-4 right-4 z-[1000]">
+    <div className="absolute top-4 right-4 z-[100]">
       <div className="glass-card p-1 flex gap-1">
         {(Object.keys(MAP_STYLES) as MapStyle[]).map((style) => (
           <button
