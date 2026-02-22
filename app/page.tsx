@@ -1,65 +1,113 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useMemo } from 'react';
+import { useStore } from '@/app/store/useStore';
+import MapContainer from '@/app/components/Map/MapContainer';
+import MapStyleSelector from '@/app/components/Map/MapStyleSelector';
+import Sidebar from '@/app/components/Sidebar/Sidebar';
+import RestaurantDetail from '@/app/components/Cards/RestaurantDetail';
+import LocationButton from '@/app/components/UI/LocationButton';
+import CompareFloatingButton from '@/app/components/UI/CompareFloatingButton';
+import Header from '@/app/components/Layout/Header';
+import restaurantsData from '@/public/data/restaurants.json';
+import { Restaurant } from '@/app/types/restaurant';
 
 export default function Home() {
+  const { restaurants, setRestaurants, filters, userLocation } = useStore();
+
+  // Load restaurants on mount
+  useEffect(() => {
+    setRestaurants(restaurantsData as Restaurant[]);
+  }, [setRestaurants]);
+
+  // Filter restaurants based on current filters
+  const filteredRestaurants = useMemo(() => {
+    return restaurants.filter((restaurant) => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch =
+          restaurant.name.toLowerCase().includes(searchLower) ||
+          restaurant.city.toLowerCase().includes(searchLower) ||
+          restaurant.country.toLowerCase().includes(searchLower) ||
+          restaurant.cuisine.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+
+      // List filter
+      if (filters.lists.length > 0) {
+        // 'both' restaurants should match either list filter
+        if (restaurant.list === 'both') {
+          // Show if any of the selected lists match
+          // (both means it's on both lists)
+        } else if (!filters.lists.includes(restaurant.list)) {
+          return false;
+        }
+      }
+
+      // Cuisine filter
+      if (filters.cuisines.length > 0) {
+        if (!filters.cuisines.includes(restaurant.cuisine)) return false;
+      }
+
+      // Country filter
+      if (filters.countries.length > 0) {
+        if (!filters.countries.includes(restaurant.country)) return false;
+      }
+
+      // Ranking tier filter
+      if (filters.rankingTier !== 'all') {
+        const tierLimits: Record<string, number> = {
+          'top-10': 10,
+          'top-25': 25,
+          'top-50': 50,
+          'top-100': 100,
+        };
+        const limit = tierLimits[filters.rankingTier];
+        if (limit && restaurant.rank > limit) return false;
+      }
+
+      // Distance filter (only if user location is available)
+      if (filters.maxDistance !== null && userLocation) {
+        const R = 6371; // Earth's radius in km
+        const dLat = ((restaurant.coordinates.lat - userLocation.lat) * Math.PI) / 180;
+        const dLon = ((restaurant.coordinates.lng - userLocation.lng) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((userLocation.lat * Math.PI) / 180) *
+            Math.cos((restaurant.coordinates.lat * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        if (distance > filters.maxDistance) return false;
+      }
+
+      return true;
+    });
+  }, [restaurants, filters, userLocation]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="h-screen w-screen overflow-hidden bg-bg-primary">
+      {/* Header with navigation */}
+      <Header />
+
+      {/* Sidebar */}
+      <Sidebar restaurants={restaurants} filteredRestaurants={filteredRestaurants} />
+
+      {/* Map */}
+      <div className="h-full w-full">
+        <MapContainer restaurants={filteredRestaurants} />
+        <MapStyleSelector />
+        <LocationButton />
+      </div>
+
+      {/* Restaurant Detail Panel */}
+      <RestaurantDetail />
+
+      {/* Compare Floating Button */}
+      <CompareFloatingButton />
+    </main>
   );
 }
