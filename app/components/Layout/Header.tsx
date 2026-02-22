@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { BarChart3, GitCompare, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -9,6 +10,12 @@ import { cn } from '@/app/lib/utils';
 export default function Header() {
   const { theme, setTheme } = useTheme();
   const { compareList } = useStore();
+  const [mounted, setMounted] = useState(false);
+
+  // Avoid hydration mismatch by only rendering theme-dependent UI after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="fixed top-0 right-0 z-[1000] p-4 flex items-center gap-2">
@@ -38,16 +45,20 @@ export default function Header() {
         )}
       </Link>
 
-      {/* Theme Toggle */}
+      {/* Theme Toggle - only render after mount to avoid hydration mismatch */}
       <button
         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         className="glass-card p-2.5 hover:bg-white/10 transition-colors"
-        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        title={mounted ? (theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode') : 'Toggle theme'}
       >
-        {theme === 'dark' ? (
-          <Sun className="w-5 h-5 text-text-primary" />
+        {mounted ? (
+          theme === 'dark' ? (
+            <Sun className="w-5 h-5 text-text-primary" />
+          ) : (
+            <Moon className="w-5 h-5 text-text-primary" />
+          )
         ) : (
-          <Moon className="w-5 h-5 text-text-primary" />
+          <Sun className="w-5 h-5 text-text-primary" />
         )}
       </button>
     </header>
